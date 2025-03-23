@@ -56,7 +56,7 @@ func runScript(commands []string) ([]string, error) {
 	return outputLines, nil
 }
 
-func TestInserts_And_Retrieves_A_Row(t *testing.T) {
+func TestDatabase(t *testing.T) {
 	t.Run("inserts and retrieves a row", func(t *testing.T) {
 		commands := []string{
 			"insert 1 user1 person1@example.com",
