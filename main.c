@@ -63,7 +63,7 @@ typedef struct {
 } Table;
 
 void print_row(Row* row) {
-  printf("(%d, %s, %s)", row->id, row->username, row->email);
+  printf("(%d, %s, %s)\n", row->id, row->username, row->email);
 }
 
 void serialize_row(Row* source, void* destination) {
