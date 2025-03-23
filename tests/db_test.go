@@ -6,6 +6,7 @@ import (
 	"io"
 	"os/exec"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -79,6 +80,81 @@ func TestDatabase(t *testing.T) {
 		// Check if the result matches the expected output
 		if !reflect.DeepEqual(result, expected) {
 			t.Errorf("Expected: %v\nGot: %v", expected, result)
+		}
+	})
+
+	t.Run("allows inserting strings that are the maximum length", func(t *testing.T) {
+		longUsername := strings.Repeat("a", 32)
+		longEmail := strings.Repeat("b", 255)
+
+		commands := []string{
+			fmt.Sprintf("insert 1 %s %s", longUsername, longEmail),
+			"select",
+			".exit",
+		}
+
+		expected := []string{
+			"db > Executed.",
+			fmt.Sprintf("db > (1, %s, %s)", longUsername, longEmail),
+			"Executed.",
+			"db > ",
+		}
+
+		result, err := runScript(commands)
+		if err != nil {
+			t.Fatalf("Failed to run script: %v", err)
+		}
+
+		// Check if the result matches the expected output
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected: %v\nGot: %v", expected, result)
+		}
+	})
+
+	t.Run("prints error message when strings are too long", func(t *testing.T) {
+		longUsername := strings.Repeat("a", 33)
+		longEmail := strings.Repeat("b", 256)
+
+		commands := []string{
+			fmt.Sprintf("insert 1 %s %s", longUsername, longEmail),
+			"select",
+			".exit",
+		}
+
+		expected := []string{
+			"db > String is too long.",
+			"db > Executed.",
+			"db > ",
+		}
+
+		result, err := runScript(commands)
+		if err != nil {
+			t.Fatalf("Failed to run script: %v", err)
+		}
+
+		// Check if the result matches the expected output
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected: %v\nGot: %v", expected, result)
+		}
+	})
+
+	t.Run("prints error message when table is full", func(t *testing.T) {
+		commands := []string{}
+		for i := 0; i < 1401; i++ {
+			command := fmt.Sprintf("insert %d user%d person%d@example.com", i, i, i)
+			commands = append(commands, command)
+		}
+
+		expected := []string{
+			"db > Error: Table full.",
+		}
+
+		result, _ := runScript(commands)
+
+		// Check if the result matches the expected output
+		actualResult := result[len(result)-2 : len(result)-1]
+		if !reflect.DeepEqual(actualResult, expected) {
+			t.Errorf("Expected: %v\nGot: %v", expected, actualResult)
 		}
 	})
 }
