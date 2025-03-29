@@ -138,6 +138,30 @@ func TestDatabase(t *testing.T) {
 		}
 	})
 
+	t.Run("prints an error message if id is negative", func(t *testing.T) {
+		commands := []string{
+			"insert -1 user1 person1@example.com",
+			"select",
+			".exit",
+		}
+
+		expected := []string{
+			"db > ID must be positive.",
+			"db > Executed.",
+			"db > ",
+		}
+
+		result, err := runScript(commands)
+		if err != nil {
+			t.Fatalf("Failed to run script: %v", err)
+		}
+
+		// Check if the result matches the expected output
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected: %v\nGot: %v", expected, result)
+		}
+	})
+
 	t.Run("prints error message when table is full", func(t *testing.T) {
 		commands := []string{}
 		for i := 0; i < 1401; i++ {
