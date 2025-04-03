@@ -10,11 +10,15 @@ import (
 	"testing"
 )
 
+func beforeEach() {
+	exec.Command("rm", "-rf", "test.db").Run()
+}
+
 // runScript executes the given commands by piping them to the db executable
 // and returns the output as a slice of strings (one per line)
 func runScript(commands []string) ([]string, error) {
 	// Create command to execute
-	cmd := exec.Command("../bin/db")
+	cmd := exec.Command("../bin/db", "test.db")
 
 	// Get pipes to stdin and stdout
 	stdin, err := cmd.StdinPipe()
@@ -59,6 +63,8 @@ func runScript(commands []string) ([]string, error) {
 
 func TestDatabase(t *testing.T) {
 	t.Run("inserts and retrieves a row", func(t *testing.T) {
+		beforeEach()
+
 		commands := []string{
 			"insert 1 user1 person1@example.com",
 			"select",
@@ -84,6 +90,8 @@ func TestDatabase(t *testing.T) {
 	})
 
 	t.Run("allows inserting strings that are the maximum length", func(t *testing.T) {
+		beforeEach()
+
 		longUsername := strings.Repeat("a", 32)
 		longEmail := strings.Repeat("b", 255)
 
@@ -112,6 +120,8 @@ func TestDatabase(t *testing.T) {
 	})
 
 	t.Run("prints error message when strings are too long", func(t *testing.T) {
+		beforeEach()
+
 		longUsername := strings.Repeat("a", 33)
 		longEmail := strings.Repeat("b", 256)
 
@@ -139,6 +149,8 @@ func TestDatabase(t *testing.T) {
 	})
 
 	t.Run("prints an error message if id is negative", func(t *testing.T) {
+		beforeEach()
+
 		commands := []string{
 			"insert -1 user1 person1@example.com",
 			"select",
@@ -163,6 +175,8 @@ func TestDatabase(t *testing.T) {
 	})
 
 	t.Run("prints error message when table is full", func(t *testing.T) {
+		beforeEach()
+
 		commands := []string{}
 		for i := 0; i < 1401; i++ {
 			command := fmt.Sprintf("insert %d user%d person%d@example.com", i, i, i)
@@ -179,6 +193,52 @@ func TestDatabase(t *testing.T) {
 		actualResult := result[len(result)-2 : len(result)-1]
 		if !reflect.DeepEqual(actualResult, expected) {
 			t.Errorf("Expected: %v\nGot: %v", expected, actualResult)
+		}
+	})
+
+	// persistence on disk
+	t.Run("keeps data after closing connection", func(t *testing.T) {
+		beforeEach()
+
+		commands := []string{
+			"insert 1 user1 person1@example.com",
+			".exit",
+		}
+
+		expected := []string{
+			"db > Executed.",
+			"db > ",
+		}
+
+		result, err := runScript(commands)
+		if err != nil {
+			t.Fatalf("Failed to run script: %v", err)
+		}
+
+		// Check if the result matches the expected output
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected: %v\nGot: %v", expected, result)
+		}
+
+		commands2 := []string{
+			"select",
+			".exit",
+		}
+
+		expected2 := []string{
+			"db > (1, user1, person1@example.com)",
+			"Executed.",
+			"db > ",
+		}
+
+		result2, err := runScript(commands2)
+		if err != nil {
+			t.Fatalf("Failed to run script: %v", err)
+		}
+
+		// Check if the result matches the expected output
+		if !reflect.DeepEqual(result2, expected2) {
+			t.Errorf("Expected: %v\nGot: %v", expected2, result2)
 		}
 	})
 }
