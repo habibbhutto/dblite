@@ -18,7 +18,7 @@ func beforeEach() {
 // and returns the output as a slice of strings (one per line)
 func runScript(commands []string) ([]string, error) {
 	// Create command to execute
-	cmd := exec.Command("../bin/db", "test.db")
+	cmd := exec.Command("../.bin/db", "test.db")
 
 	// Get pipes to stdin and stdout
 	stdin, err := cmd.StdinPipe()
